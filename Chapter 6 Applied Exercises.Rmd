@@ -1,0 +1,359 @@
+---
+title: "Chapter 6"
+author: "KK"
+date: "4/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r 8}
+
+#8
+#A 
+X=rnorm(100)
+epsilon=rnorm(100)
+
+#B
+Y=5+4*X+6*X^2 +3*X^3 + epsilon
+
+#C
+library(leaps)
+dt <- data.frame(Y,X)
+regfit <- regsubsets(Y~poly(X,10,raw=T), dt)
+summ <- summary(regfit)
+names(summ)
+
+min.cp<-which.min(summ$cp) #7
+par(mar=c(1,1,1,1))
+plot(summ$cp, xlab="Number of variables", ylab="Cp")
+points(7, summ$cp[7], col="red", cex=2, pch=20)
+
+min.bic <-which.min(summ$bic) #3
+par(mar=c(1,1,1,1))
+plot(summ$bic, xlab="Number of variables", ylab="BIC")
+points(3, summ$bic[3], col='red', cex=2, pch=20)
+
+max.adjr <-which.max(summ$adjr2)#7
+par(mar=c(1,1,1,1))
+plot(summ$adjr2, xlab="Number of variables", ylab="Adj R2")
+points(7, summ$adjr2[7], col='red', cex=2, pch=20)
+
+coef(regfit, min.cp)
+coef(regfit, min.bic)
+coef(regfit, max.adjr)
+
+#D Forward selection
+regfit.fwd=regsubsets(Y~poly(X, 10, raw=T),data=dt, method="forward")
+summ.fwd=summary(regfit.fwd)
+
+min.cp<-which.min(summ.fwd$cp) #6
+par(mar=c(1,1,1,1))
+plot(summ.fwd$cp, xlab="Number of variables", ylab="Cp")
+points(6, summ.fwd$cp[6], col="red", cex=2, pch=20)
+
+min.bic <-which.min(summ.fwd$bic) #3
+par(mar=c(1,1,1,1))
+plot(summ.fwd$bic, xlab="Number of variables", ylab="BIC")
+points(3, summ.fwd$bic[3], col='red', cex=2, pch=20)
+
+max.adjr <-which.max(summ.fwd$adjr2)#7
+par(mar=c(1,1,1,1))
+plot(summ.fwd$adjr2, xlab="Number of variables", ylab="Adj R2")
+points(7, summ.fwd$adjr2[7], col='red', cex=2, pch=20)
+
+coef(regfit.fwd, min.cp)
+coef(regfit.fwd, min.bic)
+coef(regfit.fwd, max.adjr)
+
+#backward selection
+regfit.bwd=regsubsets(Y~poly(X, 10, raw=T),data=dt, method="backward")
+summ.bwd=summary(regfit.bwd)
+
+min.cp<-which.min(summ.bwd$cp) #6
+par(mar=c(1,1,1,1))
+plot(summ.bwd$cp, xlab="Number of variables", ylab="Cp")
+points(6, summ.bwd$cp[6], col="red", cex=2, pch=20)
+
+min.bic <-which.min(summ.bwd$bic) #6
+par(mar=c(1,1,1,1))
+plot(summ.bwd$bic, xlab="Number of variables", ylab="BIC")
+points(3, summ.bwd$bic[3], col='red', cex=2, pch=20)
+
+max.adjr <-which.max(summ.bwd$adjr2)#8
+par(mar=c(1,1,1,1))
+plot(summ.bwd$adjr2, xlab="Number of variables", ylab="Adj R2")
+points(7, summ.bwd$adjr2[7], col='red', cex=2, pch=20)
+
+coef(regfit.bwd, min.cp)
+coef(regfit.bwd, min.bic)
+coef(regfit.bwd, max.adjr)
+
+#E Lasso using cv
+library(glmnet)
+x.mat=model.matrix(Y~poly(X, 10, raw=T), dt)[,-1] #0.002805463
+y.mat=dt$Y
+lasso.mod <- cv.glmnet(x.mat, y.mat, alpha=1)
+plot(lasso.mod)
+bestlam=lasso.mod$lambda.min
+bestlam
+
+lasso.pred=predict(lasso.mod, s=bestlam, type="coefficients")
+lasso.pred
+
+#F 
+Y <- 4+ 2.6*X^7+ epsilon
+df <-data.frame(Y,X)
+#Best subset
+regfit.full <- regsubsets(Y~poly(X,10, raw=T), df)
+summ.fit <-summary(regfit.full)
+
+
+min.cp<-which.min(summ.fit$cp) #1
+par(mar=c(1,1,1,1))
+plot(summ.fit$cp, xlab="Number of variables", ylab="Cp" )
+points(1, summ.fit$cp[1], col="red", cex=2, pch=20)
+
+min.bic <-which.min(summ.fit$bic) #1
+par(mar=c(1,1,1,1))
+plot(summ.fit$bic, xlab="Number of variables", ylab="BIC")
+points(1, summ.fit$bic[1], col='red', cex=2, pch=20)
+
+max.adjr <-which.max(summ.fit$adjr2)#6
+par(mar=c(1,1,1,1))
+plot(summ.fit$adjr2, xlab="Number of variables", ylab="Adj R2")
+points(6, summ.fit$adjr2[6], col='red', cex=2, pch=20)
+
+coef(regfit.full, min.cp)
+coef(regfit.full, min.bic)
+coef(regfit.full, max.adjr)
+
+#Lasso
+x.mat=model.matrix(Y~poly(X, 10, raw=T), dt)[,-1] #0.002805463
+y.mat=dt$Y
+lasso.mod <- cv.glmnet(x.mat, y.mat, alpha=1)
+plot(lasso.mod)
+bestlam=lasso.mod$lambda.min
+bestlam
+
+lasso.pred=predict(lasso.mod, s=bestlam, type="coefficients")
+lasso.pred
+
+
+
+```
+
+```{r 9}
+
+#9 
+#A
+library(ISLR)
+library(caTools)
+#head(College)
+set.seed(101)
+sample <- sample.split(College$Apps, SplitRatio=0.7)
+train <-subset(College, sample==TRUE)
+test <- subset(College, sample==FALSE)
+
+#B linear reg 
+fit.lm <- lm (Apps~., data=train)
+pred.lm <- predict(fit.lm, test)
+err.lm <- mean((test$Apps-pred.lm)^2)
+err.lm #1030418
+
+#C Ridge
+X.train <-model.matrix(Apps~., data = train)[,-1]
+X.test <- model.matrix(Apps~., data = test)[,-1]
+Y.mat <- train$Apps
+Y.test <-test$Apps
+
+ridge.mod <- cv.glmnet(X.train, Y.mat, alpha=0)
+bestlam <- ridge.mod$lambda.min
+bestlam
+ridge.pred <- predict(ridge.mod, s=bestlam, newx=X.test)
+err.ridge <- mean((Y.test-ridge.pred)^2)
+err.ridge #955641.9
+
+#D Lasso model
+lasso.mod <- cv.glmnet(X.train, Y.mat, alpha=1)
+bestlam.lasso <- lasso.mod$lambda.min
+lasso.pred <- predict(lasso.mod, s=bestlam.lasso, newx=X.test)
+err.lass = mean((Y.test-lasso.pred)^2)
+err.lass #931343.1
+
+#E PCR model
+library (pls)
+pcr.fit <- pcr(Apps~., data=train, scale=TRUE, validation="CV")
+summary(pcr.fit)
+validationplot(pcr.fit, val.type = "MSEP")
+pcr.pred <- predict(pcr.fit, test, ncomp = 16)
+err.pcr <- mean((Y.test- pcr.pred)^2) 
+err.pcr #1069549
+
+#F PLS model
+pls.fit <- plsr(Apps~. , data=train, scale=TRUE, validation="CV")
+summary(pls.fit)
+pls.pred= predict(pls.fit, test, ncomp=10)
+err.pls = mean((Y.test-pls.pred)^2)
+err.pls #984533.5
+
+#G
+err.all = c(err.lm, err.ridge, err.lass, err.pls, err.pcr)
+names(err.all) <- c("Linear Reg", "Ridge", "Lasso", 'PLS', "PCR")
+barplot(err.all)
+#We see that the test errors are not much different. Lasso and PLS perform a
+#bit better than the rest of the models, though.
+
+
+```
+
+```{r 10}
+
+#10
+#A
+epsilon = rnorm (1000)
+X = matrix(rnorm(1000*20), ncol = 20)
+betas <- sample(-5:5, 20, replace=TRUE)
+betas[c(3,7,10)]=0
+Y=X %*% betas +epsilon
+
+
+#B
+df<- data.frame(Y,X)
+set.seed(101)
+sample <- sample.split(df$Y, SplitRatio=0.1)
+train <-subset(df, sample==TRUE)
+test <- subset(df, sample==FALSE)
+
+#C Subset
+subset.fit <- regsubsets(Y~., data=train, nvmax = 20)
+
+predict.regsubsets =function(object, newdata, id,...){
+  form=as.formula(object$call[[2]])
+  mat=model.matrix(form, newdata)
+  coefi=coef(object, id=id)
+  xvars=names(coefi)
+  mat[,xvars]%*%coefi
+}
+
+train.err=rep(NA,20)
+for (i in 1:20){
+  pred=predict.regsubsets(subset.fit, train, id=i)
+  train.err[i]=mean((train$Y-pred)^2)
+}
+
+plot(1:20, train.err, xlab="Number of Predictors", main="Train MSE")
+which.min(train.err) #min is at 20, as expected, at the max of predictors
+
+#C
+test.err=rep(NA,20)
+for (i in 1:20){
+  pred=predict.regsubsets(subset.fit, test, id=i)
+  test.err[i]=mean((test$Y-pred)^2)
+}
+plot(1:20, test.err, type="b",xlab="Number of Predictors", main="Train MSE")
+which.min(test.err) #15
+
+#E
+# The test error takes its min value at the 15th predictor
+
+#F
+
+subset.all <- regsubsets(Y~., data=df, nvmax = 20)
+all.err=rep(NA,20)
+for (i in 1:20){
+  pred=predict.regsubsets(subset.all, df, id=i)
+  all.err[i]=mean((df$Y-pred)^2)
+}
+plot(1:20, all.err, type="b",xlab="Number of Predictors", main="Train MSE")
+which.min(all.err) #15
+
+#The best subset model selects the model with all the variables. 
+
+```
+
+```{r 11}
+
+#11
+#A 
+#subset
+library(MASS)
+library(glmnet)
+library(leaps)
+head(Boston)
+
+#Lets divide the data into train and test data
+set.seed(1)
+sample <- sample.split(Boston$crim, SplitRatio=0.7)
+train <-subset(Boston, sample==TRUE)
+test <- subset(Boston, sample==FALSE)
+Xmat.train <- model.matrix(crim~., train)[,-1]
+Xmat.test <-model.matrix(crim~., test)[,-1]
+Y.train <- train$crim
+Y.test <-test$crim
+
+#Lasso
+lasso.mod <- cv.glmnet(Xmat.train, Y.train, alpha=1)
+bestlam.lass= lasso.mod$lambda.min
+lasso.pred = predict(lasso.mod, s=bestlam.lass, newx = Xmat.test)
+err.lasso=mean((lasso.pred-Y.test)^2)
+err.lasso 
+predict(lasso.mod, s=bestlam.lasso, type="coefficients")
+
+#Ridge
+ridge.mod <-cv.glmnet(Xmat.train, Y.train, alpha=0)
+lambda.ridge <-ridge.mod$lambda.min
+ridge.pred <- predict(ridge.mod, s=lambda.ridge, newx = Xmat.test)
+err.ridge=mean((Y.test-ridge.pred)^2)
+err.ridge 
+predict(ridge.mod, s=lambda.ridge, type="coefficients")
+
+
+#forward selection
+fit.fwd = regsubsets(crim~., train, nvmax = ncol(Boston)-1, 
+                     method="forward")
+fwd.summary=summary(fit.fwd)
+err.fwd=rep(NA, ncol(Boston)-1)
+for (i in 1:(ncol(Boston)-1)){
+  pred=predict(fit.fwd, test, id=i)
+  err.fwd[i]=mean((Y.test-pred)^2)
+}
+plot(err.fwd, type="b", main="Test MSE for Forward Selection")
+which.min(err.fwd) #2
+points(2,err.fwd[2], col="red" )
+err.fwd #83.92266 
+
+#backward selection
+fit.bwd=regsubsets(crim~., train, nvmax=ncol(Boston)-1,
+                   method="backward")
+bwd.summary=summary(fit.bwd)
+err.bwd=rep(NA, ncol(Boston)-1)
+for (i in 1:(ncol(Boston)-1)){
+  pred.bwd=predict.regsubsets(fit.bwd, test, id=i)
+  err.bwd[i]=mean((Y.test-pred.bwd)^2)
+}
+
+plot(err.bwd, type="b", main="Test MSE for Backward Selection")
+which.min(err.bwd) #8
+
+err.bwd #82.53558 
+#ADJ R^2
+max.r2.bwd <-which.max(bwd.summary$adjr2)
+max.r2.fwd<-which.max(fwd.summary$adjr2)
+
+#B
+err.lasso #86.07752
+err.ridge #86.35867
+min(err.bwd) # 82.53558
+min(err.fwd) #83.92266
+bwd.summary
+#C
+# We can choose the backward selection, since it has the smallest test MSE. 
+#The model we chose does not use all the predictors in the model. 
+
+```
+
