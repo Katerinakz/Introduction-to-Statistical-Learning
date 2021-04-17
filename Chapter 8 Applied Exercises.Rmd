@@ -1,0 +1,242 @@
+---
+title: "Ch.8-Decision Trees"
+author: "KK"
+date: "4/17/2021"
+output: html_document
+---
+
+```{r 7 }
+library(tree)
+library(ISLR)
+library(MASS)
+library(randomForest)
+library(gbm)
+
+set.seed(1)
+train=sample(1:nrow(Boston), nrow(Boston)/2)
+boston.test=Boston[-train, "medv"]
+n=nrow(Boston)
+p=ncol(Boston)
+
+ntree_t= seq(from=1, to=500, by=10)
+mse.bag=rep(NA, length(ntree_t))
+
+for (nti in 1:length(ntree_t)){
+  nt=ntree_t[nti]
+  boston.bag=randomForest(medv~., data=Boston, subset=train,
+                          mtry=p, importance=TRUE, ntree=nt)
+  yhat=predict(boston.bag, newdata=Boston[-train,] )
+  mse.bag[nti]=mean((yhat-boston.test)^2)
+}
+
+#for mtry= p/2
+mse.p.half=rep(NA, length(ntree_t))
+
+for (nti in 1:length(ntree_t)){
+  nt=ntree_t[nti]
+  boston.bag=randomForest(medv~., data=Boston, subset=train,
+                          mtry=p/2, importance=TRUE, ntree=nt)
+  yhat=predict(boston.bag, newdata=Boston[-train,] )
+  mse.p.half[nti]=mean((yhat-boston.test)^2)
+}
+
+#for mtry= sqrt of p
+mse.sqrt=rep(NA, length(ntree_t))
+
+for (nti in 1:length(ntree_t)){
+  nt=ntree_t[nti]
+  boston.bag=randomForest(medv~., data=Boston, subset=train,
+                          mtry=sqrt(p), importance=TRUE, ntree=nt)
+  yhat=predict(boston.bag, newdata=Boston[-train,] )
+  mse.sqrt[nti]=mean((yhat-boston.test)^2)
+}
+
+plot(ntree_t,mse.bag, xlab="Number of Trees", ylab="Test MSE", 
+     col="red", type="b", ylim = c(10,40),  )
+lines(ntree_t, mse.p.half, xlab="Number of Trees", ylab="Test MSE",
+      col="green", type="b", ylim = c(10,40) )
+lines(ntree_t, mse.sqrt, xlab="Number of Trees", ylab="Test MSE",
+      col="blue", type="b", ylim = c(10,40) )
+```
+
+
+```{r 8}
+#High=ifelse (Carseats$Sales <=8," No"," Yes ")
+#Carseats$High=ifelse(Carseats$Sales<=8,"No", "Yes" )
+#Carseats$High=as.factor(Carseats$High)
+
+#A
+train=sample(1:nrow(Carseats), 200)
+carseats.test=Carseats[-train,]
+
+
+#B: regression tree
+car.tree= tree(Sales~., Carseats, subset=train)
+tree.pred=predict(car.tree, newdata=carseats.test)
+mean((tree.pred-carseats.test$Sales)^2) #4.818779
+
+#C
+set.seed(3)
+cv.car=cv.tree(car.tree)
+names(cv.car)
+cv.car
+
+par(mfrow=c(1,2))
+plot(cv.car$size, cv.car$dev, type="b")
+plot(cv.car$k, cv.car$dev, type="b")
+
+prune.car=prune.tree(car.tree,best=7)
+plot(prune.car)
+text(prune.car,pretty=0)
+tree.pred=predict(prune.car, newdata=carseats.test)
+mean((tree.pred-carseats.test$Sales)^2) #5.128044
+
+#D Bagging
+set.seed(1)
+p=ncol(Carseats)-1
+bag.car=randomForest(Sales~., data=Carseats, subset=train, mtry=10, 
+                     ntree=100, importance=TRUE)
+yhat.bag=predict(bag.car, newdata=carseats.test)
+mean((yhat.bag-carseats.test$Sales)^2) #2.61704
+importance(bag.car)
+
+#E
+rf.car=randomForest(Sales~., data=Carseats, subset=train, mtry=5,
+                    importance=TRUE)
+yhat.rf=predict(rf.car, newdata=carseats.test)
+mean((yhat.rf-carseats.test$Sales)) #0.06273972
+importance(rf.car)
+plot(rf.car)
+```
+
+```{r 9}
+#A
+set.seed(1)
+train=sample(1:nrow(OJ), 800)
+OJ.test=OJ[-train,]
+
+#B
+oj.tree=tree(Purchase~., data=OJ, subset=train)
+summary(oj.tree)
+
+#C &D
+print(oj.tree)
+plot(oj.tree)
+text(oj.tree, pretty=0)
+
+#E
+pred.tree=predict(oj.tree, OJ.test, type="class")
+table(pred.tree, OJ.test$Purchase)
+(160+64)/270 #0.8296296
+
+#F-I
+set.seed(3)
+cv.oj=cv.tree(oj.tree,FUN=prune.misclass)
+names(cv.oj)
+cv.oj
+
+par(mfrow=c(1,2))
+plot(cv.oj$size, cv.oj$dev, type="b") #7
+
+prune.oj=prune.misclass(oj.tree, best=7)
+plot(prune.oj)
+text(prune.oj, pretty=0)
+
+prune.pred=predict(prune.oj, OJ.test, type="class")
+table(prune.pred, OJ.test$Purchase)
+(160+66)/270 #0.837037
+
+train.pred.prune=predict(prune.oj, OJ[train,], type="class")
+table(train.pred.prune, OJ[train,]$Purchase)
+(441 +229)/800 #0.8375
+```
+
+
+```{r 10}
+#A
+Hitters2=na.omit(Hitters)
+Hitters2$Salary=log(Hitters2$Salary)
+
+#B
+p=ncol(Hitters)-1
+n=nrow(Hitters)
+train=1:200
+
+hitt.train=Hitters2[train,]
+hitt.test=Hitters2[-train,]
+
+#C & D
+lambda=seq(from=0.0001, to=0.04, by=0.001)
+training_mse=rep(NA,length(lambda))
+test_mse=rep(NA,length(lambda))
+
+for (i in 1:length(lambda)){
+  i2=lambda[i]
+  
+  boost.hitt=gbm(Salary~., data=hitt.train, distribution="gaussian",
+                 n.trees=1000, interaction.depth = 4, shrinkage=i2,
+                 verbose=F)
+  yhat.train=predict(boost.hitt, newdata=hitt.train,
+                     n.trees=1000)
+  training_mse[i]=mean((yhat.train-hitt.train$Salary)^2)
+  yhat.test=predict(boost.hitt, newdata=hitt.test, n.trees=1000)
+  test_mse[i]=mean((yhat.test-hitt.test$Salary)^2)
+}
+
+plot(lambda, training_mse, col="red", type="b",  xlab = "Lambda Value", ylab = "MSE")
+lines(lambda, test_mse, col="green", type="b",  xlab = "Lambda Value", ylab = "MSE")
+
+#E
+lin=lm(Salary~., data=hitt.train)
+yhat.lin=predict(lin, newdata=hitt.test)
+mean((yhat.lin-hitt.test$Salary)^2) #0.4917959
+
+#F
+
+
+boost.hitters=gbm(Salary~., data=hitt.train, distribution="gaussian",
+                 n.trees=1000, interaction.depth = 4, shrinkage=0.01,
+                 verbose=F)
+pred.boost=predict(boost.hitters, newdata=hitt.test, n.trees=1000)
+mean((pred.boost-hitt.test$Salary)^2) # 0.2752264
+
+summary(boost.hitters)
+
+#G
+p=ncol(Hitters)-1
+bag.hitt=randomForest(Salary~., data=hitt.train, mtry=p, 
+                      importance=TRUE)
+bag.pred=predict(bag.hitt, newdata=hitt.test)
+mean((bag.pred-hitt.test$Salary)^2) #0.2320334
+
+```
+
+```{r 11}
+#A
+Caravan2=na.omit(Caravan)
+train=1:500
+train.car=Caravan2[train,]
+test.car=Caravan2[-train,]
+PurchaseBinary <- rep(0, n)
+PurchaseBinary[Caravan2$Purchase == "Yes"] <- 1
+Caravan2$Purchase <- PurchaseBinary
+
+#B
+Caravan2$PVRAAUT =NULL
+Caravan2$AVRAAUT =NULL
+boost.car=gbm(Purchase~., data=train.car, distribution="bernoulli",
+              n.trees=1000, shrinkage=0.01)
+summary(boost.car)
+
+#C
+boost.pred=predict(boost.car, newdata = test.car,n.trees=1000 )
+p_hat <- exp(boost.pred)/(1 + exp(boost.pred))  # convert the logodd output into probabilities 
+
+will_buy <- rep(0, length(test.car))
+will_buy[p_hat > 0.2] <- 1
+
+table(will_buy, test.car$Purchase)
+
+
+
+```
