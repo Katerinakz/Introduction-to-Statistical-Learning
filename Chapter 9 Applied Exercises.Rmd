@@ -1,0 +1,226 @@
+---
+title: "Chapter 9 SVM Applied Exercises"
+author: "KK"
+date: "4/19/2021"
+output: html_document
+---
+
+```{r 4}
+#4 
+x=matrix(rnorm(100*2), ncol = 2)
+y=c(rep(0,50),rep(1,50) )
+x[y==1,]=x[y==1,]+1
+dat=data.frame(x=x, y=as.factor(y))
+train=sample(100,70)
+  
+  
+#SVM linear 
+svmfit=svm(y~., data=dat[train,], kernel="linear", scale=FALSE, cost=10)
+summary(svmfit)
+plot(svmfit, dat[train,])
+table(svmfit$fitted, dat[train,]$y)
+(29+32)/70 #0.87
+
+pred.lin=predict(svmfit, newdata = dat[-train,])
+table(pred.lin, dat[-train,]$y)
+plot(svmfit,dat[-train,])
+(9+14)/30 #0.7666667
+
+#SVM radial
+svmpol=svm(y~., data=dat[train,], kernel="radial", cost=10, gamma=1)
+plot(svmpol, dat[train,])
+table(svmpol$fitted, dat[train,]$y)
+(31+34)/70 #0.9285714
+
+pred.rad=predict(svmpol, newdata=dat[-train,])
+table(pred.rad, dat[-train,]$y)
+(9+12)/30 #0.7
+plot(svmpol,dat[-train,])
+
+```
+
+```{r 5}
+#A
+x1=runif(500)-0.5
+x2=runif(500)-0.5
+y=1*(x1^2- x2^2>0)
+dat=data.frame(x1=x1, x2=x2, y=as.factor(y))
+
+#B
+plot(x1,x2, col=(y+1), pch=19)
+
+#C & D
+log.fit=glm(y~., data=dat, family="binomial")
+summary(log.fit)
+pred.log=predict(log.fit, newdata=data.frame(x1=x1, x2=x2), type="response")
+predicted_cl =1*(pred.log>0.5)
+table(predicted_cl, dat$y)
+
+plot(x1, x2, col=(predicted_cl+1), pch=19, cex=1.15, main="Logistic Regression")
+
+#E & F 
+log.fit=glm(y~x1+x2+I(x1^2) +I(x2^2) +I(x1 * x2), data=dat, family="binomial")
+summary(log.fit)
+
+log.pred=predict(log.fit, newdata=data.frame(x1=x1, x2=x2), type="response")
+predicted.cl.log =1*(log.pred>0.5)
+table(predicted.cl.log, dat$y)
+
+plot(x1, x2, col=(predicted.cl.log+1), pch=19, cex=1.15, main="Polynomial Regression")
+
+#G
+svmfit=svm(y~., data=dat, kernel="linear", cost=10, scale=FALSE)
+plot(svmfit, dat)
+tune.out=tune(svm, y~. , data=dat, kernel="linear", ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+best.mod=tune.out$best.model
+summary(best.mod)
+
+plot(best.mod, dat)
+
+
+#H
+tune.out2=tune(svm, y~., data=dat, kernel="radial", 
+              ranges=list(cost=c(0.1, 1, 10, 100, 1000), 
+                          gamma=c(0.5, 1,2,3,4)))
+summary(tune.out2)
+best.mod2=tune.out2$best.model
+
+plot(best.mod2,dat)
+
+```
+
+
+```{r 6}
+#A 
+p=2
+set.seed(1)
+x=matrix(rnorm(50*2), ncol=2)
+y=c(rep(-1,25), rep(1,25))
+x[y==1,]=x[y==1,]+1
+x[y == 1, ] =x[y == 1, ] + 0.5
+plot(x, col=(y+3), pch=19, cex=1.15, main="Initial Data")
+dat=data.frame(x=x, y=as.factor(y))
+
+#B
+tune.out=tune(svm, y~., data=dat, kernel="linear", 
+              ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+print(summary(tune.out))
+bestmod=tune.out$best.model
+summary(bestmod)
+plot(bestmod, dat)
+
+#C
+xtest <- matrix(rnorm(20 * 2), ncol = 2)
+ytest <- c(rep(-1, 10), rep(+1, 10))
+xtest[ytest == 1, ] <- xtest[ytest == 1, ] + 1
+xtest[ytest == 1, ] <- xtest[ytest == 1, ] + 0.5
+
+dat.test <- data.frame(x=xtest, y = as.factor(ytest))
+
+preds=predict(bestmod, newdata=dat.test)
+table(preds, dat.test$y)
+(9+7)/20 #0.8
+
+```
+
+
+```{r 7}
+#A
+head(Auto)
+Auto2=Auto
+Auto2$y=ifelse(Auto2$mpg>median(Auto2$mpg),1,0)
+Auto2$y=as.factor(Auto2$y)
+
+#B
+tune.out=tune(svm, y~., data=Auto2, kernel="linear", 
+              ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+
+tune.out$best.model
+
+plot(tune.out$best.model, Auto2, weight ~ horsepower)
+plot(tune.out$best.model, Auto2, cylinders ~ acceleration )
+plot(tune.out$best.model, Auto2, weight ~ year  )
+
+#C
+tune.rad=tune(svm, y~., data=Auto2, kernel="radial", 
+              ranges=list(cost=c(0.1, 1, 10, 100, 1000), 
+                          gamme=c(0.5, 1,2,3,4)))
+tune.rad$best.model
+
+plot(tune.rad$best.model, Auto2, weight ~ horsepower)
+plot(tune.rad$best.model, Auto2, cylinders ~ acceleration )
+plot(tune.rad$best.model, Auto2, weight ~ year  )
+
+
+tune.pol=tune(svm, y~., data=Auto2, kernel="polynomial", 
+              ranges=list(cost=c(0.1, 1, 10, 100, 1000), 
+                          gamme=c(0.5, 1,2,3,4)))
+tune.pol$best.model
+
+plot(tune.pol$best.model, Auto2, weight ~ horsepower)
+plot(tune.pol$best.model, Auto2, cylinders ~ acceleration )
+plot(tune.pol$best.model, Auto2, weight ~ year  )
+
+
+```
+
+
+```{r 8}
+head(OJ)
+#A
+train=sample(1070, 800)
+
+#B & C
+svc=svm(Purchase~., data=OJ[train,], kernel="linear", cost=0.01)
+summary(svc)
+table(svc$fitted, OJ[train,]$Purchase)
+(432 +234)/800 #0.8325 accuracy on training set
+
+preds=predict(svc, newdata=OJ[-train,])
+table(preds, OJ[-train,]$Purchase)
+(136+84)/270 #0.8148148 accuracy on testing set
+
+
+#D
+tune.out=tune(svm, Purchase~. , data=OJ[train,], kernel="linear",
+              ranges=list(cost=c( 0.01, 0.1, 1, 5, 10)))
+summary(tune.out)
+tune.out$best.model
+
+#E
+pred.train=predict(tune.out$best.model, newdata=OJ[train,] )
+table(pred.train, OJ[train,]$Purchase)
+(436+239)/800   #0.84375
+
+pred.test=predict(tune.out$best.model, newdata=OJ[-train,] )
+table(pred.test, OJ[-train,]$Purchase)
+(140+84)/270 #0.8296296
+
+#F
+tune.rad=tune(svm, Purchase~. , data=OJ[train,], kernel="radial",
+              ranges=list(cost=c( 0.01, 0.1, 1, 5, 10)))
+tune.rad$best.model
+pred.train=predict(tune.rad$best.model, newdata=OJ[train,] )
+table(pred.train, OJ[train,]$Purchase)
+(449+231)/800 #0.85
+
+pred.test=predict(tune.rad$best.model, newdata=OJ[-train,] )
+table(pred.test, OJ[-train,]$Purchase)
+(141+71)/270 #0.7851852
+
+tune.pol=tune(svm, Purchase~. , data=OJ[train,], kernel="polynomial", degree=2,
+              ranges=list(cost=c( 0.01, 0.1, 1, 5, 10)))
+
+tune.pol$best.model
+
+pred.train=predict(tune.pol$best.model, newdata=OJ[train,] )
+table(pred.train, OJ[train,]$Purchase)
+(457+224)/800 #0.85125
+
+pred.test=predict(tune.pol$best.model, newdata=OJ[-train,] )
+table(pred.test, OJ[-train,]$Purchase)
+(145+66)/270 #0.7814815
+
+
+```
+
