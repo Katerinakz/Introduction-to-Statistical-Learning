@@ -1,0 +1,254 @@
+---
+title: "Chapter 3 Applied Exercises"
+author: "KK"
+date: "4/21/2021"
+output: html_document
+---
+
+```{r 8}
+#A
+library(ISLR)
+fix(Auto)
+lm.fit=lm(mpg~horsepower, data=Auto)
+summary(lm.fit)
+#strong relationship between the predictor and the repsonse. Negative response. 
+predict(lm.fit, data.frame(horsepower=c(98)), interval="confidence")
+
+#B
+plot(Auto$horsepower, Auto$mpg)
+abline(lm.fit, col="red", lwd=3)
+
+#C
+plot(lm.fit)
+```
+``` {r 9}
+#A
+pairs(Auto)
+
+#B
+cor(subset(Auto, select=-name))
+
+#C
+a=subset(Auto, select=-name)
+lm.fit=lm(mpg~., data=a)
+summary(lm.fit)
+#origin,year, weight and displacement have the most significant relationship with the response.
+
+#D
+plot(lm.fit)
+
+#E
+lm.fit.prod=lm(mpg~. + horsepower*weight, data=a)
+summary(lm.fit.prod)
+plot(lm.fit.prod)
+
+lm.fit.2=lm(mpg~. +acceleration*cylinders, data=a)
+summary(lm.fit.2)
+plot(lm.fit.2)
+
+#F
+lm.fit.log=lm(mpg~. +log(acceleration), data=a)
+summary(lm.fit.log)
+plot(lm.fit.log)
+
+lm.fit.sqrt=lm(mpg~. +sqrt(horsepower), data=a)
+summary(lm.fit.sqrt)
+plot(lm.fit.sqrt)
+
+```
+
+```{r 10}
+#A
+fix(Carseats)
+lm.fit=lm(Sales~Price+Urban+US, data=Carseats)
+summary(lm.fit)
+
+#C
+# y=13.043469- 0.054459*Price - 0.021916*UrbanYes + 1.200573*USYes 
+#If urban or US is no then they are 0. 
+
+#D & E 
+#UrbanYes
+lm.fit=lm(Sales~Price+US, data=Carseats)
+summary(lm.fit)
+
+#G
+confint(lm.fit)
+
+#H
+plot(lm.fit)
+
+```
+```{r 11}
+set.seed(1)
+x=rnorm(100)
+y=2*x+rnorm(100)
+dat=data.frame(x,y)
+#A
+lin.fit=lm(y~x+0, data=dat)
+summary(lin.fit)
+plot(lin.fit)
+
+#B
+lin.fit2=lm(x~y+0, data=dat)
+summary(lin.fit2)
+plot(lin.fit2)
+
+#F
+lm_x_to_y=lm(x~y, data=dat)
+summary(lm_x_to_y)
+
+lm_y_to_x=lm(y~x, data=dat)
+summary(lm_y_to_x)
+
+```
+``` {r 12}
+#B
+set.seed(101)
+x=rnorm(100)
+y=3*x+rnorm(100)
+
+ln1=lm(y~x, data=data.frame(x,y))
+summary(ln1)
+
+ln2=lm(x~y, data=data.frame(x,y))
+summary(ln2)
+
+#C
+y=x
+ln1=lm(y~x, data=data.frame(x,y))
+summary(ln1)
+
+ln2=lm(x~y, data=data.frame(x,y))
+summary(ln2)
+
+
+
+```
+
+
+```{r 13}
+library(ggplot2)
+set.seed(1)
+#A, B, C, D
+x=rnorm(100)
+eps=rnorm(100, mean=0, sd = sqrt(0.25))
+y=-1 +0.5*x + eps
+dat=data.frame(x,y)
+ggplot(dat, aes(x,y))+geom_point()
+
+#E
+ln=lm(y~x, data=dat)
+summary(ln)
+plot(x,y)
+abline(ln)
+
+#G
+lnsq=lm(y~poly(x,2), data=dat)
+summary(lnsq)
+plot(x,y)
+abline(lnsq)
+
+#H-J
+eps.less <- rnorm(100, mean = 0, sd = sqrt(0.1))
+y.less=-1 +0.5*x + eps.less
+dat.less=data.frame(x,y.less)
+ln.less=lm(y.less~x, data=dat.less)
+summary(ln.less)
+plot(x,y)
+abline(ln.less)
+
+eps.more <- rnorm(100, mean = 0, sd = sqrt(0.5))
+y.more=-1 +0.5*x + eps.more
+dat.more=data.frame(x,y.more)
+ln.more=lm(y.less~x, data=dat.more)
+summary(ln.more)
+plot(x,y)
+abline(ln.more)
+
+confint(ln)
+confint(ln.less)
+confint(ln.more)
+
+
+```
+
+```{r 14}
+#A
+set.seed(1)
+x1=runif(100)
+x2=0.5*rnorm(100)/10
+y=2+2* x1 +0.3* x2+rnorm (100)
+dat=data.frame(x1,x2, y)
+#B
+cor(x1, x2)
+plot(x1, x2)
+
+#C
+lnfit=lm(y~x1+x2, data=dat)
+summary(lnfit)
+
+#D
+ln1=lm(y~x1, data=dat)
+summary(ln1)
+
+#E
+ln2=lm(y~x2, data=dat)
+summary(ln2)
+
+#G
+x1=c(x1 , 0.1)
+x2=c(x2 , 0.8)
+y=c(y,6)
+dat=data.frame(x1,x2, y)
+
+lnfit=lm(y~x1+x2, data=dat)
+summary(lnfit)
+plot(lnfit)
+
+ln1=lm(y~x1, data=dat)
+summary(ln1)
+plot(ln1)
+
+ln2=lm(y~x2, data=dat)
+summary(ln2)
+plot(ln2)
+
+```
+
+```{r 15}
+fix(Boston)
+names(Boston)
+
+#A
+crim=Boston[,1]
+f.val=c()
+p.val=c()
+beta.val=c()
+post.pred=colnames(Boston)
+for(i in 1:length(post.pred)){
+  if(post.pred[i]=="crim"){
+    next
+  } 
+  x= Boston[,i]
+  ln=lm(crim~x, data=Boston)
+  s=summary(ln)
+  f.val=c(f.val, s$fstatisctic[1])
+  p.val=c(p.val, anova(ln)$"Pr(>F)"[1])
+  beta.val=c(beta.val,coefficients(ln)["x"])
+  print(sprintf("%s %10.6f",post.pred[i], coefficients(ln)["x"]))
+}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
