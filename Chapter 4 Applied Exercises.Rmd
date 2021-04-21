@@ -1,0 +1,209 @@
+---
+title: "Chapter 4 Applied Excercises"
+author: "KK"
+date: "4/21/2021"
+output: html_document
+---
+
+```{r 10}
+#A
+library(ISLR)
+fix(Weekly)
+dim(Weekly)
+names(Weekly)
+summary(Weekly)
+head(Weekly)
+str(Weekly)
+Weekly2=Weekly
+
+Weekly2$NumDirection=as.numeric(Weekly$Direction)
+Weekly2$NumDirection[Weekly2$NumDirection==1]<- -1
+Weekly2$NumDirection[Weekly2$NumDirection==2]<- +1
+
+#B
+logfit=glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume, data=Weekly2,
+           family=binomial)
+summary(logfit) #Lag2 is significantly important.
+
+#C
+preds=predict(logfit, Weekly2, type="response")
+glm.pred=rep("Down", 1089)
+glm.pred[preds>0.5]="Up"
+table(glm.pred, Weekly$Direction)
+(54+557)/1089 #0.5610652
+
+#D
+attach(Weekly)
+train=(Year<=2008)
+Weekly.2008=Weekly[!train,]
+Direction.2008=Direction[!train]
+log.1pred=glm(Direction~Lag2, data=Weekly, family=binomial, 
+              subset=train)
+preds=predict(log.1pred, newdata=Weekly.2008, type="response")
+
+glm.pred=rep("Down", 104)
+glm.pred[preds>0.5]="Up"
+table(glm.pred,Direction.2008)
+(9 +56)/104 #0.625
+
+#E
+lda.fit=lda(Direction~Lag2, data=Weekly, family=binomial, subset=
+              train)
+lda.pred=predict(lda.fit, Weekly.2008)
+lda.class=lda.pred$class
+table(lda.class,Direction.2008)
+(9+56)/104 #0.625
+mean(lda.class!= Direction.2008) #0.375
+
+#F
+qda.fit=qda(Direction~Lag2, data=Weekly, family=binomial, subset=
+              train)
+qda.pred=predict(qda.fit, newdata = Weekly.2008)
+qda.class=qda.pred$class
+table(qda.class,Direction.2008)
+61/104 #0.5865385
+mean(qda.class!= Direction.2008)  #0.4134615
+
+#G
+x.train=data.frame(Lag2=Weekly[train,]$Lag2)
+x.test=data.frame(Lag2=Weekly.2008$Lag2)
+y.train=Direction[train]
+
+knn1=knn(x.train, x.test, y.train, k=1)
+table(knn1, Direction.2008)
+(21+32)/104 #0.51
+
+#I
+knn3=knn(x.train, x.test, y.train, k=3)
+table(knn3, Direction.2008)
+(15+42)/104 #0.5480769
+
+knn5=knn(x.train, x.test, y.train, k=5)
+table(knn5, Direction.2008)
+ (15+39)/104 #0.5192308
+
+#Logistic regression and lda seem like the best options
+
+```
+```{r 11}
+#A
+head(Auto)
+Auto2=Auto
+Auto2$mpg01= ifelse(Auto$mpg>median(Auto$mpg), 1, 0)
+Auto2=subset(Auto2, select=-mpg)
+Auto2=subset(Auto2, select=-name)
+
+#B
+cor(Auto2)
+
+#C
+library(caTools)
+train=sample(392, 200)
+test=Auto2[-train,]
+
+#D
+lda.fit=lda(mpg01~., data=Auto2[train,] )
+lda.pred=predict(lda.fit, newdata = test)
+lda.class=lda.pred$class
+table(lda.class, test$mpg01)
+(82+86)/192 #0.875
+mean(lda.class!= test$mpg01) #0.125
+
+#E
+qda.fit=qda(mpg01~., data=Auto2[train,] )
+qda.pred=predict(qda.fit, newdata = test)
+qda.class=qda.pred$class
+table(qda.class, test$mpg01)
+(86+85)/192 #0.890625
+mean(qda.class!= test$mpg01) #0.109375
+
+#F
+log.fit=glm(mpg01~., data=Auto2[train,], family=binomial)
+preds=predict(log.fit, newdata=test)
+preds.fit=ifelse(preds>0.5, 1, 0)
+table(preds.fit, test$mpg01)
+(93+79)/192 #0.8958333
+mean(preds.fit != test$mpg01) #0.1041667
+
+#G
+#cylinders, weight, displacement
+attach(Auto2)
+mpg.test=mpg01[-train]
+x.train=cbind(cylinders, weight, displacement)[train,]
+y.train=mpg01[train]
+x.test=cbind(test$cylinders, test$weight, test$displacement)
+
+knn1= knn(x.train,x.test, y.train, k=1)
+table(knn1,test$mpg01 )
+(86+79)/192 #0.859375
+```
+
+```{r 12}
+Power <- function(){
+  print(2^3)
+}
+
+Power2=function(x,a){
+  print(x^a)
+}
+Power2(3,8)
+Power2(10,3)
+Power2(8,17)
+Power2(131,3)
+
+Power3=function(x,a){
+ result=(x^a)
+ return(result)
+}
+Power3(2,3)
+
+i=1:10
+plot(i, Power3(i,2), log="xy")
+
+PlotPower = function(x, a) {
+    plot(x, Power3(x, a))
+}
+PlotPower(1:10, 3)
+
+```
+```{r 13}
+attach(Boston2)
+Boston2=Boston
+Boston2$crime=ifelse(Boston$crim>median(Boston$crim), 1,0)
+Boston2=subset(Boston2, select=-crim)
+train=sample(506, 350)
+test=Boston2[-train,] #156
+
+#Log regression
+log.fit=glm(crime~., data=Boston2[train,], family=binomial)
+log.pred=predict(log.fit, newdata = test)
+log.class=ifelse(log.pred>0.5, 1, 0)
+table(log.class,test$crime)
+(65+74)/156 #0.8910256
+
+summary(log.fit)
+#rad, nox,dis (the most important variables)
+
+log.fit2=glm(crime~rad+nox+dis, data=Boston2[train,], family=binomial)
+log.pred2=predict(log.fit2, newdata = test)
+log.class2=ifelse(log.pred2>0.5, 1, 0)
+table(log.class2,test$crime)
+(71+62)/156 #0.8525641
+
+#LDA
+lda.fit=lda(crime~., data=Boston2[train,])
+lda.class=predict(lda.fit, newdata = test)$class
+table(lda.class, test$crime)
+(69+63)/156 #0.8461538
+
+#QDA
+qda.fit=lda(crime~rad+nox+dis, data=Boston2[train,])
+qda.class=predict(qda.fit, newdata = test)$class
+table(qda.class, test$crime)
+(71+61)/156# 0.8461538
+
+
+```
+
+
+
