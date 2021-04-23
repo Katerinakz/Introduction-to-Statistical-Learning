@@ -1,0 +1,105 @@
+---
+title: "Chapter 10 Applied Exercises"
+author: "KK"
+date: "4/22/2021"
+output: html_document
+---
+
+```{r 7}
+library(ISLR)
+head(USArrests)
+usa.scaled=t(scale(t(USArrests)))
+euc=as.matrix(dist(usa.scaled)^2)
+corr=(1-cor(t(usa.scaled)))
+plot(euc, corr)
+
+```
+
+```{r 8}
+#A
+usa.scale=scale(USArrests)
+pr.out=prcomp(usa.scale)
+pr.var=pr.out$sdev^2
+pve=pr.var/sum(pr.var)
+
+denominator=apply(usa.scale^2, 2, sum)
+pr.out$x
+a=apply(pr.out$x^2, 2, sum)
+
+pve.2=a/denominator
+
+plot(pve, pve.2)
+```
+
+```{r 9}
+#A & B
+hc.complete=hclust(dist(USArrests), method="complete")
+plot(hc.complete, main="Complete Linkage", xlab="", sub="", cex=.9)
+
+c=cutree(hc.complete, 3)
+
+for (k in 1:3) {
+    print(k)
+    print(rownames(USArrests)[c== k])
+}
+                             
+#C & D
+usa.scaled= scale(USArrests)
+hc.complete.sc=hclust(dist(usa.scaled), method="complete")
+plot(hc.complete.sc, main="Complete Linkage", xlab="", sub="", cex=.9)
+
+c.sc=cutree(hc.complete.sc, 3)
+for (k in 1:3){
+  print(k)
+  print(rownames(USArrests)[c==k])
+}
+
+```
+
+```{ r 10}
+#A
+set.seed(1)
+x=matrix(rnorm(20*3*50, mean=0, sd=0.01), ncol=50)
+x[1:20, 2] = 1
+x[21:40, 1] = 2
+x[21:40, 2] = 2
+x[41:60, 1] = 1
+
+#B
+pca.mod=prcomp(x,scale=FALSE)
+pca.mod
+plot(pca.mod$x[,1:2], col=2:4, xlab="Z1", ylab="Z2")
+
+#C
+km.out=kmeans(x, 3, nstart=20)
+km.out
+plot(x, col=km.out$cluster, main="K-Means Clustering Results with 
+     K=3", xlab="", ylab="", pch=20, cex=2)
+table(km.out$cluster, c(rep(1,20), rep(2,20), rep(3,20)))
+
+#D
+km.out=kmeans(x, 2, nstart=20)
+summary(km.out)
+plot(x, col=km.out$cluster, main="K-Means Clustering Results with 
+     K=2", xlab="", ylab="", pch=20, cex=2)
+     
+#E
+km.out=kmeans(x, 4, nstart=20)
+summary(km.out)
+plot(x, col=km.out$cluster, main="K-Means Clustering Results with 
+     K=4", xlab="", ylab="", pch=20, cex=2)
+
+#F
+km.out=kmeans(pca.mod$x[,1:2], 3, nstart=20)
+plot(x, col=km.out$cluster, main="K-Means Clustering Results with 
+     K=4", xlab="", ylab="", pch=20, cex=2)
+
+#G
+x.scale=scale(x)
+km.out=kmeans(x.scale, 3, nstart=20)
+km.out
+plot(x.scale, col=km.out$cluster, main="K-Means Clustering Results with K=3", xlab="", ylab="", pch=20, cex=2)
+table(km.out$cluster, c(rep(1,20), rep(2,20), rep(3,20)))
+
+```
+
